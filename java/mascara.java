@@ -9,26 +9,41 @@ public class mascara{
 		}
 
 	else {
-		token(args[0]);
 		token(args[1]);
+		numeroValido(token(args[0]));
 		
 		}	
 	}
 	
 	/*int[] token() recibe un string de consola una ip*/
 		public static int[] token(String consola){
-			int i;
-			i=0;
-			int [] consolaToInt = new int[4];
-
-			StringTokenizer tokens = new StringTokenizer(consola,".");
+				int i=0;
+				int [] consolaToInt = new int[4];
+				StringTokenizer tokens = new StringTokenizer(consola,".");
 		
 			while(tokens.hasMoreTokens() && i!=consolaToInt.length){
 				consolaToInt [i]= Integer.parseInt(tokens.nextToken());
 				
-			System.out.println(consolaToInt[i]);i++;
+				System.out.print(" "+consolaToInt[i]);
+				i++;
 			}
 		return consolaToInt;
+		}
+
+		public static void numeroValido(int[] ip){
+			int i;
+			for(i=0;i<= ip.length;i++)
+			{
+				if(ip[i]<256 && ip[i] >=0){
+						System.out.print(ip[i]);
+				}
+				else{
+					System.out.print("el numero no es valido");
+					break;				
+					
+				}
+			}
+
 		}
 
 
