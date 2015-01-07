@@ -1,4 +1,4 @@
-// Librerias ...
+// Librerias ... a utilizar
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -17,9 +17,9 @@ private static byte[] buffer;
 // Metodo principal
 
 public static void main(String args[]) throws IOException{
-	String l;
-		IP_Server=(args[0]); //ip del servidor
-		l = (args[1]);
+	   String l;
+	   l = (args[1]);
+        IP_Server=(args[0]); //ip del servidor
 		PORT_Server = Integer.parseInt(l);//puerto del servidor
 		
     try {
@@ -62,6 +62,18 @@ private static void accesaServer() throws IOException{
             outPacket = new DatagramPacket( mensaje.getBytes(), mensaje.length(), host,PORT_Server); //Paso 2. - Crea Paquete de Solicitud
 
             datagramSocket.send(outPacket); //Paso 3...
+
+            // recepcion de datos 
+             buffer = new byte[256] ; // paso 2 - Crea bufer
+            inPacket = new DatagramPacket(buffer , buffer.length); // paso 3 - Asigna Bufer al Socket
+            datagramSocket.receive(inPacket); // paso 4 -   Escucha, hasta que le env�en algo
+
+
+            InetAddress clientAddress = inPacket.getAddress(); // paso 5 - Clasifica informaci�n recibida del Cliente
+            int clientPort = inPacket.getPort();
+            int lRec = inPacket.getLength();
+            respuesta = new String(inPacket.getData(),0,lRec); // paso 6 - Obtiene Mensaje recibido del cliente
+            System.out.println("Mensaje recibido, Longitud: ["+lRec+"]: " + respuesta);
         
     } while (!mensaje.equals("CLOSE"));
 

@@ -1,5 +1,4 @@
-/*servidor UDP------------
-gcc srvUDP1.c -o srvUDP1
+/*servidor UDP------------gcc srvUDP1.c -o srvUDP1
 ./srvUDP1
 */
 
@@ -21,9 +20,12 @@ main(int argc, char *argv[])
   int sockfd; 
   int port;	/* El puerto a utilizar */	
 
+  /*mensaje a enviar declaracion de variable*/
+  char msj[MAXBUFLEN];
+
   struct sockaddr_in my_addr;	/* direccion IP y numero de puerto local */ 
 
-  struct sockaddr_in their_addr;	/* direccion IP y numero de puerto del cliente */ 
+  struct sockaddr_in cliente_addr;	/* direccion IP y numero de puerto del cliente */ 
 
   /* addr_len contendra el tamanio de la estructura sockadd_in
     y numbytes el numero de bytes recibidos */ 
@@ -74,23 +76,37 @@ main(int argc, char *argv[])
   addr_len = sizeof(struct sockaddr); 
   char buffer[40];
   do{
-  	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+  	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&cliente_addr, &addr_len)) == -1) 
   	{
     		perror("recvfrom"); 
     		exit(1);
   	} 
 
   	/* Se visualiza lo recibido */ 
-  	printf("paquete proveniente de : %s\n",inet_ntoa(their_addr.sin_addr));
+  	printf("<IP CLIENTE>: %s ",inet_ntoa(cliente_addr.sin_addr));
+    printf("<PUERTO>: %d\n ",htons(cliente_addr.sin_port));
  
-  	printf("longitud del paquete en bytes : %d\n",numbytes);
+  	printf("<longitud del paquete en bytes >: %d\n",numbytes);
  	
   	buf[numbytes] = '\0'; 
 
-  	printf("el paquete contiene : %s\n",buf);
-  	
+  	printf("<MENSAJE>: %s\n",buf);
+
+    printf( "Escribe una oracion:\n");
+    printf( "\nHas escrito: %s", fgets(msj, sizeof(msj),stdin));
+
+    if ((numbytes=sendto(sockfd, msj, strlen(msj), 0, (struct sockaddr *)&cliente_addr, sizeof(struct sockaddr))) == -1) 
+    {
+      perror("Error al enviar mensaje con: sendto"); 
+      exit(1);
+    } 
+
+    printf("enviados %d bytes hacia %s",numbytes,inet_ntoa(cliente_addr.sin_addr));
+
+
+
 	
-  }while(!strcmp(buf,"CLOSE"));
+  }while(strcmp(buf,"CLOSE"));
   /* devolvemos recursos al sistema */ 
   close(sockfd); 
 
