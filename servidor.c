@@ -17,12 +17,27 @@ los cliente envian los paquetes */
 
 #define MAXBUFLEN 100 /* Max. cantidad de bytes que podra recibir en una llamada a recvfrom() */ 
 
+//estructura para el manejo de paquetes
+typedef struct{
+  int numeroPaquete;
+  char contenido[20];
+  int ACK;
+
+}Paquete;
+
 main(int argc, char *argv[]) 
 { 
-  FILE *ficherols;
+  FILE *ficherols, *ficherosend;
   int sockfd; 
   int port; /* El puerto a utilizar */  
+///////////estructura de prueva
+  Paquete datos;
+  datos.numeroPaquete=1;
+  strcpy(datos.contenido,"hola");
+  datos.ACK=2;
 
+  printf("%s\n",datos.contenido);
+  ///////////
   struct sockaddr_in my_addr; /* direccion IP y numero de puerto local */ 
 
   struct sockaddr_in their_addr;  /* direccion IP y numero de puerto del cliente */ 
@@ -83,21 +98,20 @@ main(int argc, char *argv[])
     }
 
     /* Se visualiza lo recibido */ 
-    printf("Paquete proveniente de : %s:%d\n",inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port));
-    printf("longitud del paquete en bytes : %d\n",numbytes);
+    printf("Paquete proveniente de Cliente: %s puerto:%d longitud: %d bytes\n",inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port),numbytes);
+    // printf("longitud del paquete en bytes : %d\n",numbytes);
     buf[numbytes] = '\0'; 
 
-    printf("el paquete contiene : %s\n",buf);
+    printf(": %s\n",buf);
 
-  sprintf(buffer,"ip:%s puerto:%d msg:%s",inet_ntoa(their_addr.sin_addr),ntohs(their_addr.sin_port),buf);
+    sprintf(buffer,"ip:%s puerto:%d msg:%s",inet_ntoa(their_addr.sin_addr),ntohs(their_addr.sin_port),buf);
  
     ///si solicitan la lista de archivos
     if (strcasecmp(buf,"ls")==0)
     {
-      system("ls -l > ls.txt");
+      system("ls -l> ls.txt");
       ficherols= fopen("ls.txt","r");
         while(feof(ficherols) == 0)
-
         {
 
         fgets(buffer, MAXBUFLEN, ficherols);
@@ -109,21 +123,47 @@ main(int argc, char *argv[])
           }
           printf("%s",buffer );
         }
-          strcpy(buffer, "TERMINADO");
-          if ((numbytes=sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
-    {
-      perror("Error al enviar mensaje con: sendto"); 
-      exit(1);
-    }
-
-
-
-
-
-      printf("Enviados: %d VARIABLE numbytes:  buffer--%s--\n",numbytes, buffer);
-
+      strcpy(buffer, "TERMINADO");
+      if ((numbytes=sendto(sockfd, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+        {
+          perror("Error al enviar mensaje con: sendto"); 
+          exit(1);
+        }
+        printf("Envia Servidor: %d numbytes:  buffer--%s--\n",numbytes, buffer);
       fclose(ficherols);
+//ciclo para manejar el envio de archivo 
+      while(1)
+      {
 
+
+          if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+            {
+              perror("error en recvfrom"); 
+              exit(1);
+            }
+
+           if( ficherosend=fopen(buf,"r")){
+            printf("enviando...........\n");
+              if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+                  {
+                    perror("Error al enviar mensaje con: sendto"); 
+                    exit(1);
+                  }
+            fclose(ficherosend);
+            break;
+           }
+           //manejo si no tengo el archivo 
+           else {
+                strcpy(buffer, "No tengo ese archivo");
+                printf("%s\n",buffer );
+                if ((numbytes=sendto(sockfd, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+                  {
+                    perror("Error al enviar mensaje con: sendto"); 
+                    exit(1);
+                  }
+          }
+
+      }//ciclo para manejar el envio de archivo 
 
     }
     //termina lista de archivos

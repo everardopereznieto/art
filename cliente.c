@@ -14,9 +14,26 @@
 
 #define MAXBUFLEN 100 /* Max. cantidad de bytes que podra recibir en una llamada a recvfrom() */ 
 
+//estructura para el manejo de paquetes
+typedef struct{
+  int numeroPaquete;
+  char contenido[20];
+  int ACK;
+
+}Paquete;
+
+
+
+
 int main(int argc, char *argv[]) 
 { 
 
+
+
+
+
+
+  Paquete datos;
   int sockfd; 
   int port=MYPORT;
   char msg[MAXBUFLEN];
@@ -64,55 +81,81 @@ int main(int argc, char *argv[])
   	gets(msg);   
   
   	/* enviamos el mensaje, esta linea contiene una barra invertida al final, indicando que sigue abajo*/ 
-  	if ((numbytes=sendto(sockfd, msg, strlen(msg), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
-  	{
-    	perror("Error al enviar mensaje con: sendto"); 
-    	exit(1);
-  	} 
+  	   if ((numbytes=sendto(sockfd, msg, strlen(msg), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+  	   {
+        	perror("Error al enviar mensaje con: sendto"); 
+    	   exit(1);
+  	   } 
 
-  	printf("enviados %d bytes hacia %s\n",numbytes,inet_ntoa(their_addr.sin_addr));
+  	printf("Cliente envia %d bytes a Servidor  %s\n",numbytes,inet_ntoa(their_addr.sin_addr));
 	
     //si enviamos ls
 
-      int salirls=1;
-    if(strcasecmp(msg,"ls")==0){
-      printf("reciviendo ls.txt\n");
-      while(strcasecmp(buf,"TERMINADO")!=0){
-        if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-    {
-        perror("error en recvfrom"); 
-        exit(1);
-    } 
+      if(strcasecmp(msg,"ls")==0)
+      {
+
+        printf("reciviendo ls.txt\n");
+        while(strcasecmp(buf,"TERMINADO")!=0)
+        {
+          if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+          {
+            perror("error en recvfrom"); 
+            exit(1);
+          } 
     ///si termina de enviar envia msg '\0'
-    if(strcasecmp(buf,"TERMINADO")==0){
-      strcpy(buf, "TERMINADO");
-    }
+          if(strcasecmp(buf,"TERMINADO")==0)
+            {
+            strcpy(buf, "TERMINADO");
+            }
     /* Se visualiza lo recibido */ 
     // printf("paquete proveniente de : %s\n",inet_ntoa(their_addr.sin_addr));
  
      // printf("longitud del paquete en bytes : %d\n",numbytes);
   
-    buf[numbytes] = '\0'; 
+        buf[numbytes] = '\0'; 
 
-    printf("%s",buf);
+        printf("%s",buf);
 
 
-    }
+        }
+// enviando nombre de archivo
+        while(1)
+        {
+          printf("Dame el nombre del archivo:\n");
+          gets(msg);
+          if ((numbytes=sendto(sockfd, msg, strlen(msg), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+              {
+                perror("Error al enviar mensaje con: sendto"); 
+                exit(1);
+              } 
+              printf("lo que tiene BUF%s\n",buf );
+              if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+                {
+                  perror("error en recvfrom"); 
+                  exit(1);
+                } 
+                ////intento tratar si no esta el archivo
+                //  printf("%s\n",buf);
+              if(strcmp(buf,"No tengo ese archivo")==0)
+                {
+                  printf("mande mal el nombre\n");
+                }
+              else
+              {
+                if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+                {
+                  perror("error en recvfrom"); 
+                  exit(1);
+                }
+                printf("%s\n",datos.contenido );
+
+              }  
+        }
 
       }
     ///////////fin si enviamos ls
 
 //recivimos datos
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -123,9 +166,9 @@ int main(int argc, char *argv[])
   	} 
 
   	/* Se visualiza lo recibido */ 
-  	printf("paquete proveniente de : %s\n",inet_ntoa(their_addr.sin_addr));
+  	printf("proveniente de Servidor: %s longitud %d bytes\n",inet_ntoa(their_addr.sin_addr), numbytes);
  
-  	printf("longitud del paquete en bytes : %d\n",numbytes);
+  	// printf("longitud del paquete en bytes : %d\n",numbytes);
  	
   	buf[numbytes] = '\0'; 
 
