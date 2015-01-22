@@ -16,13 +16,14 @@
 
 //estructura para el manejo de paquetes
 typedef struct{
-  int numeroPaquete;
-  char contenido[20];
+  char nombre[50];
+  int existe;
+  int tamanio;
+  char contenido[1000];
+  int nPaquete;
   int ACK;
 
 }Paquete;
-
-
 
 
 int main(int argc, char *argv[]) 
@@ -31,13 +32,21 @@ int main(int argc, char *argv[])
 
 
 
-
+  FILE * ficherorecv;
 
   Paquete datos;
+  // //////inicializo estructura
+  // datos.nPaquete=0;
+  // strcpy(datos.contenido," ");
+  // datos.ACK=0;
+  // datos.existe=0;
+  // strcpy(datos.nombre," ");
+  // datos.tamanio=0;
   int sockfd; 
   int port=MYPORT;
   char msg[MAXBUFLEN];
   char * ip;
+  int cuentafichero, sizecontenido, sizefichero;
   
   struct sockaddr_in their_addr; /* Almacenara la direccion IP y numero de puerto del servidor */ 
   int addr_len, numbytes; 
@@ -103,10 +112,10 @@ int main(int argc, char *argv[])
             exit(1);
           } 
     ///si termina de enviar envia msg '\0'
-          if(strcasecmp(buf,"TERMINADO")==0)
-            {
-            strcpy(buf, "TERMINADO");
-            }
+          // if(strcasecmp(buf,"TERMINADO")==0)
+          //   {
+          //   strcpy(buf, "TERMINADO");
+          //   }
     /* Se visualiza lo recibido */ 
     // printf("paquete proveniente de : %s\n",inet_ntoa(their_addr.sin_addr));
  
@@ -118,45 +127,94 @@ int main(int argc, char *argv[])
 
 
         }
-// enviando nombre de archivo
+//////////////////////////////7 enviando nombre de archivo//////////////////////////////////////////////////77
         while(1)
         {
-          printf("Dame el nombre del archivo:\n");
-          gets(msg);
-          if ((numbytes=sendto(sockfd, msg, strlen(msg), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+          printf("\nDame el nombre del archivo:\n");
+          gets(datos.nombre);
+          printf("%s\n",datos.nombre );
+          if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
               {
                 perror("Error al enviar mensaje con: sendto"); 
                 exit(1);
               } 
-              printf("lo que tiene BUF%s\n",buf );
-              if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+              if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
                 {
                   perror("error en recvfrom"); 
                   exit(1);
                 } 
                 ////intento tratar si no esta el archivo
-                //  printf("%s\n",buf);
-              if(strcmp(buf,"No tengo ese archivo")==0)
+              if(datos.existe==0)
                 {
-                  printf("mande mal el nombre\n");
+                  printf("mande mal el nombre[%d]\n",datos.existe);
                 }
-              else
-              {
-                if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-                {
-                  perror("error en recvfrom"); 
-                  exit(1);
-                }
-                printf("%s\n",datos.contenido );
+             
 
+
+
+
+
+              if(datos.existe==1)//////////////////////recibo tamaño de archivo////////////////////////////////////
+              {
+                printf("El archivo si existe [datos.existe]%d\n",datos.existe );
+                printf("reciviendo el archivo...........[%s]\n",datos.nombre);
+                ficherorecv=fopen(datos.nombre,"wb+");
+                printf("%d\n",datos.tamanio );
+                sizecontenido = sizeof(datos.contenido);
+                cuentafichero=sizeof(datos.contenido);
+                sizefichero=datos.tamanio;
+                ///////////////recibo archivo///////////////////
+                while(1){
+
+
+                 if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+                  {
+                    perror("error en recvfrom"); 
+                    exit(1);
+                   }
+                  if (cuentafichero < sizefichero){
+                    //printf("%s\n",datos.contenido );
+                    fwrite(datos.contenido,sizeof(datos.contenido),1,ficherorecv);
+                    //memset( datos.contenido , 0 , sizeof( datos.contenido ) );
+                    printf("Copiando...[%d]-->[%d]\n",cuentafichero,datos.tamanio);
+                  }
+                  if(cuentafichero > datos.tamanio){
+                    cuentafichero = cuentafichero -sizecontenido;
+                    sizefichero = sizefichero - cuentafichero;
+                    fwrite(datos.contenido,sizefichero,1,ficherorecv);
+                    printf("Copiando...[%d]-->[%d]\n",sizefichero,datos.tamanio);
+                    fclose(ficherorecv);
+                    printf("termine de copiar\n");
+                    break;
+                  }
+                  cuentafichero +=sizecontenido;
+
+
+
+
+                }///////termina recibo archivo
+                
+                break;
               }  
+
+
+
+
+
+
+
+
+
+
+
+
         }
 
       }
     ///////////fin si enviamos ls
 
 //recivimos datos
-
+printf("recibo\n");
 
 
 	if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 

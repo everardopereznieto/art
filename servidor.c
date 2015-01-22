@@ -19,8 +19,11 @@ los cliente envian los paquetes */
 
 //estructura para el manejo de paquetes
 typedef struct{
-  int numeroPaquete;
-  char contenido[20];
+  char nombre[50];
+  int existe;
+  int tamanio;
+  char contenido[1000];
+  int nPaquete;
   int ACK;
 
 }Paquete;
@@ -30,14 +33,15 @@ main(int argc, char *argv[])
   FILE *ficherols, *ficherosend;
   int sockfd; 
   int port; /* El puerto a utilizar */  
-///////////estructura de prueva
-  Paquete datos;
-  datos.numeroPaquete=1;
-  strcpy(datos.contenido,"hola");
-  datos.ACK=2;
-
-  printf("%s\n",datos.contenido);
-  ///////////
+  int cuentafichero, sizecontenido, sizefichero;
+  Paquete datos;/*estrucuta donde se enviaran los datos*/
+// ///////////////7inicializo la estructura
+//   datos.nPaquete=0;
+//   strcpy(datos.contenido," ");
+//   datos.ACK=0;
+//   datos.existe=0;
+//   strcpy(datos.nombre,"o");
+//   datos.tamanio=0;
   struct sockaddr_in my_addr; /* direccion IP y numero de puerto local */ 
 
   struct sockaddr_in their_addr;  /* direccion IP y numero de puerto del cliente */ 
@@ -111,17 +115,18 @@ main(int argc, char *argv[])
     {
       system("ls -l> ls.txt");
       ficherols= fopen("ls.txt","r");
-        while(feof(ficherols) == 0)
+        while(!feof(ficherols))
         {
 
         fgets(buffer, MAXBUFLEN, ficherols);
 
-        if ((numbytes=sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+        if ((numbytes=sendto(sockfd, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
           {
           perror("Error al enviar mensaje con: sendto"); 
           exit(1);
           }
           printf("%s",buffer );
+          memset( buffer , 0 , sizeof(buffer) );
         }
       strcpy(buffer, "TERMINADO");
       if ((numbytes=sendto(sockfd, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
@@ -135,28 +140,92 @@ main(int argc, char *argv[])
       while(1)
       {
 
-
-          if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
+          if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
             {
               perror("error en recvfrom"); 
               exit(1);
             }
 
-           if( ficherosend=fopen(buf,"r")){
-            printf("enviando...........\n");
+
+
+
+
+
+
+
+
+
+///////// si existe el archivo
+           if( ficherosend=fopen(datos.nombre,"rb+")){
+            printf("enviando...........%s\n",datos.nombre);
+              memset(&datos.existe, 0, sizeof(datos.existe));
+              datos.existe=1;
+              fseek(ficherosend,0,SEEK_END);
+              datos.tamanio= (int) ftell(ficherosend);
+              sizefichero=datos.tamanio;
+              printf("%d\n",datos.tamanio);
+              fseek(ficherosend,0,SEEK_SET);
+              sizecontenido=sizeof(datos.contenido);
+              cuentafichero=sizecontenido;
+///////////////envio existe el ficherotamaño/////
               if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
                   {
                     perror("Error al enviar mensaje con: sendto"); 
                     exit(1);
                   }
-            fclose(ficherosend);
+                  printf("[%d] Bytes enviados: %d\n",numbytes,datos.tamanio );
+
+///////////////envio archivo
+                  while(1){
+
+
+                        if (cuentafichero < sizefichero){
+                          fread(datos.contenido,sizeof(datos.contenido),1,ficherosend);
+                          //memset( datos.contenido , 0 , sizeof(datos.contenido ) );
+                          printf("Enviando...[%d] -->[%d]\n",cuentafichero,datos.tamanio);
+                          //printf("%s\n",datos.contenido );
+                          if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+                        {
+                          perror("Error al enviar mensaje con: sendto"); 
+                          exit(1);
+                        }
+                       }
+                        if(cuentafichero > datos.tamanio){
+                          cuentafichero = cuentafichero -sizecontenido;
+                          sizefichero = sizefichero - cuentafichero;
+                          fread(datos.contenido,sizefichero,1,ficherosend);
+                          printf("Enviando...[%d]-->[%d]\n",sizefichero,datos.tamanio);
+                          printf("termine de copiar \n");
+                          if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+                        {
+                          perror("Error al enviar mensaje con: sendto"); 
+                          exit(1);
+                        }
+                          fclose(ficherosend);
+                          break;
+                        }  
+                        cuentafichero +=sizecontenido;             
+                  }
+
+
             break;
            }
+
+
+
+
+
+
+
+
+
+
+
            //manejo si no tengo el archivo 
            else {
-                strcpy(buffer, "No tengo ese archivo");
-                printf("%s\n",buffer );
-                if ((numbytes=sendto(sockfd, buffer, strlen(buffer)+1, 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
+                printf("No tengo archivo\n");
+                datos.existe=0;
+                if ((numbytes=sendto(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
                   {
                     perror("Error al enviar mensaje con: sendto"); 
                     exit(1);
