@@ -109,11 +109,11 @@ int main(int argc, char *argv[])
         printf("reciviendo ls.txt\n");
         while(strcasecmp(buf,"TERMINADO")!=0)
         {
+		while(1){
           if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-          {
-            perror("error en recvfrom"); 
-            exit(1);
-          } 
+          {;}
+	else{break;} 
+	}
     ///si termina de enviar envia msg '\0'
           // if(strcasecmp(buf,"TERMINADO")==0)
           //   {
@@ -141,11 +141,11 @@ int main(int argc, char *argv[])
                 perror("Error al enviar mensaje con: sendto"); 
                 exit(1);
               } 
+		while(1){
               if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-                {
-                  perror("error en recvfrom"); 
-                  exit(1);
-                } 
+                {;}
+		else{break;} 
+		}
                 ////intento tratar si no esta el archivo
               if(datos.existe==0)
                 {
@@ -194,11 +194,11 @@ int main(int argc, char *argv[])
                                   fwrite(datos.contenido,sizeof(datos.contenido),1,ficherorecv);
                                   //memset( datos.contenido , 0 , sizeof( datos.contenido ) );
                                   printf("Copiando...[%d] pack %d-->[%d]\n",cuentafichero,datos.nPaquete,datos.tamanio);
-                                  
+                                  //sleep(1);
                                   datos.ACK=1;
                                   while(errnak1){if(datos.nPaquete==3){datos.ACK=0;errnak1=0;printf("Envio NAK:%d --> Paquete[%d] \n",datos.ACK,datos.nPaquete);}else {break;}}
                                   while(errnak2){if(datos.nPaquete==6){datos.ACK=0;errnak2=0;printf("Envio NAK:%d --> Paquete[%d] \n",datos.ACK,datos.nPaquete);}else {break;}}
-                                  while(errnak3){if(datos.nPaquete==10){sleep(5);errnak3=0;printf("Envio NAK:%d --> Paquete[%d] \n",datos.ACK,datos.nPaquete);}else {break;}}
+                                  while(errnak3){if(datos.nPaquete==10){sleep(10);errnak3=0;printf("Envio NAK:%d --> Paquete[%d] \n",datos.ACK,datos.nPaquete);}else {break;}}
                                   while(errnak4){if(datos.nPaquete==15){datos.ACK=0;errnak4=0;printf("Envio NAK:%d --> Paquete[%d] \n",datos.ACK,datos.nPaquete);}else {break;}}
 
 
@@ -275,7 +275,7 @@ while(1){
   
 
 
-  }while(strcmp("CLOSE",msg));
+  }while(strcmp(buf,"CLOSE"));
   close(sockfd); 
 
   return 0; 

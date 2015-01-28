@@ -22,7 +22,7 @@ los cliente envian los paquetes */
 
 int I=0;
 int termino,id,timeout;
-double secs,compara=0.00002;
+double secs,compara=0.99;
 clock_t comienzo, final;
 struct tm *tiempoComienzoPtr, *tiempoFinalPtr;
 
@@ -35,8 +35,8 @@ void *codigo_del_hilo (void *id)
    while(1){
     final = clock();
       if(timeout==1){
-        pthread_exit(id);
         printf("termino hilo\n");
+        pthread_exit(id);
         break;
       }
       secs = (double)(final - comienzo) / CLOCKS_PER_SEC;
@@ -133,11 +133,11 @@ main(int argc, char *argv[])
   addr_len = sizeof(struct sockaddr); 
   char buffer[MAXBUFLEN];
   do{
+	while(1){
     if ((numbytes=recvfrom(sockfd, buf, MAXBUFLEN, 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-    {
-        perror("error en recvfrom"); 
-        exit(1);
-    }
+    {; }
+else{break;}
+}
 
     /* Se visualiza lo recibido */ 
     printf("Paquete proveniente de Cliente: %s puerto:%d longitud: %d bytes\n",inet_ntoa(their_addr.sin_addr), ntohs(their_addr.sin_port),numbytes);
@@ -177,12 +177,11 @@ main(int argc, char *argv[])
 //ciclo para manejar el envio de archivo 
       while(1)
       {
-
+		while(1){
           if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
-            {
-              perror("error en recvfrom"); 
-              exit(1);
-            }
+            {; }
+		else{break;}	
+		}
 
 
 
@@ -228,12 +227,14 @@ main(int argc, char *argv[])
                                                 
                                                 fseek(ficherosend,posicionfseek,SEEK_SET);
                                                 // sleep(1);
-                                                comienzo = clock();
-                                                  pthread_t h;
                                                   id=1;
                                                   int error;
                                                   int *salida;
                                                   timeout=0;
+                                                  pthread_t h;
+                                                  datos.ACK=0;
+                                                  //sleep(1);
+                                                  comienzo = clock();
                                                   error=pthread_create (&h, NULL, codigo_del_hilo,&id);
                                                 fread(datos.contenido,sizeof(datos.contenido),1,ficherosend);
                                                 //memset( datos.contenido , 0 , sizeof(datos.contenido ) );
@@ -242,36 +243,33 @@ main(int argc, char *argv[])
                                                   {
                                                     perror("Error al enviar mensaje con: sendto"); 
                                                     exit(1);
-                                                   }                                            
+                                                   }      
+                                                   sleep(1);                                      
 
                                                   while(1){
 
+
                                                           if ((numbytes=recvfrom(sockfd,&datos,sizeof(datos), 0, (struct sockaddr *)&their_addr, &addr_len)) == -1) 
                                                           {; }
-
+                                                        if (timeout == 1)
+                                                        {
+                                                          printf("reenviando %d",datos.nPaquete);
+                                                          error=pthread_join (h, (void **) &salida);
+                                                           break;
+                                                        }
                                                           else{
+                                                            timeout=1;
+                                                            error=pthread_join (h, (void **) &salida);
                                                           break;
                                                               }
                                                           }
-
-                                                        
-
-
-                          // else{    
-                                                          if(timeout==1){printf("tiempoooooooooooo\n");
-                                                          timeout=0;}
-                                      printf("ACK:%d--> %d\n",datos.ACK,datos.nPaquete);
-                                      if (datos.ACK==0)
-                                      {
-                                       printf("Recibo un NACK------\n");
-                                      }
-
                                     }
                                       if (datos.ACK == 1){
                                             datos.nPaquete +=1;
                                             cuentafichero +=sizecontenido;             
                                             break;
                                             }
+                                            //else {break;}
 
 
 
@@ -329,7 +327,6 @@ main(int argc, char *argv[])
 //enviamos datos
   printf("Mensaje:\n");
   gets(buffer);
-  
   if ((numbytes=sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr *)&their_addr, sizeof(struct sockaddr))) == -1) 
     {
       perror("Error al enviar mensaje con: sendto"); 
